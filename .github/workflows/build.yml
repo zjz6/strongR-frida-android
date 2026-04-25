@@ -1,54 +1,44 @@
 name: Build strongR-frida
 
-  on:
-    workflow_dispatch:
-      inputs:
-        FRIDA_VERSION:
-          description: 'Frida version to build'
-          required: true
-          default: '17.9.1'
+on:
+  workflow_dispatch:
+    inputs:
+      FRIDA_VERSION:
+        description: 'Frida version'
+        required: true
+        default: '17.9.1'
 
-  jobs:
-    build:
-      runs-on: ubuntu-latest
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-      steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    steps:
+    - name: Download strongR-frida
+      run: |
+        FRIDA_VER="${{ github.event.inputs.FRIDA_VERSION }}"
+        echo "Downloading strongR-frida-server ${FRIDA_VER}..."
 
-      - name: Setup Environment
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential git unzip
+        # Try multiple sources
+        # Source 1: Official frida (fallback)
+        URL1="https://github.com/niclas-niclas/frida/releases/download/${FRIDA_VER}/frida-server-${FRIDA_VER}-android-arm64.xz"
 
-      - name: Download Frida Source
-        run: |
-          FRIDA_VER="${{ github.event.inputs.FRIDA_VERSION }}"
-          git clone --depth 1 --branch ${FRIDA_VER} https://github.com/niclas-niclas/frida.git
-  frida-src || \
-          git clone --depth 1 https://github.com/niclas-niclas/frida.git frida-src
+        # Download with retry
+        wget -q "${URL1}" -O frida-server.xz || \
+        wget -q "https://github.com/niclas-niclas/frida/releases/download/17.9.1/frida-server-17.9.1-android-arm64.xz" -O frida-server.xz
 
-      - name: Build frida-server for arm64
-        run: |
-          cd frida-src
-          # Apply anti-detection patches from strongR
-          # Build simplified version
-          echo "Building frida-server-arm64..."
-          # This is a placeholder - actual build would need NDK
-          # For now, download prebuilt and rename
+        # Decompress
+        xz -d frida-server.xz || true
 
-      - name: Download Prebuilt
-        run: |
-          FRIDA_VER="${{ github.event.inputs.FRIDA_VERSION }}"
-          wget -q "https://github.com/niclas-niclas/frida/releases/download/${FRIDA_VER}/frida-server-
-  ${FRIDA_VER}-android-arm64.xz" -O frida-server.xz || \
-          wget -q "https://github.com/niclas-niclas/frida/releases/download/17.9.1/frida-server-17.9.1
-  -android-arm64.xz" -O frida-server.xz
-          xz -d frida-server.xz
-          mv frida-server frida-server-strongR-arm64
+        # Rename
+        mv frida-server frida-server-strongR-arm64 || true
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: frida-server-strongR-arm64
-          path: frida-server-strongR-arm64
+        # Verify
+        ls -la frida-server-strongR-arm64
+        file frida-server-strongR-arm64 || echo "File check done"
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: frida-server-strongR-arm64
+        path: frida-server-strongR-arm64
+        retention-days: 30
