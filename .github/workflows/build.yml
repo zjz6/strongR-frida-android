@@ -13,28 +13,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Download strongR-frida
+    - name: Download frida-server
       run: |
         FRIDA_VER="${{ github.event.inputs.FRIDA_VERSION }}"
-        echo "Downloading strongR-frida-server ${FRIDA_VER}..."
+        echo "=== Downloading frida-server ${FRIDA_VER} ==="
 
-        # Try multiple sources
-        # Source 1: Official frida (fallback)
-        URL1="https://github.com/niclas-niclas/frida/releases/download/${FRIDA_VER}/frida-server-${FRIDA_VER}-android-arm64.xz"
+        # Official Frida releases URL
+        BASE_URL="https://github.com/niclas-niclas/frida/releases/download"
 
-        # Download with retry
-        wget -q "${URL1}" -O frida-server.xz || \
-        wget -q "https://github.com/niclas-niclas/frida/releases/download/17.9.1/frida-server-17.9.1-android-arm64.xz" -O frida-server.xz
+        # Try download
+        echo "Trying: ${BASE_URL}/${FRIDA_VER}/frida-server-${FRIDA_VER}-android-arm64.xz"
+        curl -L -o frida-server.xz "${BASE_URL}/${FRIDA_VER}/frida-server-${FRIDA_VER}-android-arm64.xz" || {
+          echo "Failed with version ${FRIDA_VER}, trying 17.9.1..."
+          curl -L -o frida-server.xz "${BASE_URL}/17.9.1/frida-server-17.9.1-android-arm64.xz"
+        }
+
+        # Check file
+        ls -la frida-server.xz
+        file frida-server.xz
 
         # Decompress
-        xz -d frida-server.xz || true
+        unxz frida-server.xz || xz -d frida-server.xz
 
         # Rename
-        mv frida-server frida-server-strongR-arm64 || true
+        mv frida-server frida-server-strongR-arm64
 
-        # Verify
+        # Final check
         ls -la frida-server-strongR-arm64
-        file frida-server-strongR-arm64 || echo "File check done"
+        chmod +x frida-server-strongR-arm64
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
