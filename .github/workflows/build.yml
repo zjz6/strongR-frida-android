@@ -18,13 +18,13 @@ jobs:
         FRIDA_VER="${{ github.event.inputs.FRIDA_VERSION }}"
         echo "=== Downloading frida-server ${FRIDA_VER} ==="
 
-        # Official Frida releases URL
-        BASE_URL="https://github.com/niclas-niclas/frida/releases/download"
+        # strongR-frida releases (pre-patched anti-detection version)
+        BASE_URL="https://github.com/hzzheyang/strongR-frida-android/releases/download"
 
-        # Try download
-        echo "Trying: ${BASE_URL}/${FRIDA_VER}/frida-server-${FRIDA_VER}-android-arm64.xz"
+        # Download pre-patched frida-server
+        echo "Downloading from: ${BASE_URL}/${FRIDA_VER}/frida-server-${FRIDA_VER}-android-arm64.xz"
         curl -L -o frida-server.xz "${BASE_URL}/${FRIDA_VER}/frida-server-${FRIDA_VER}-android-arm64.xz" || {
-          echo "Failed with version ${FRIDA_VER}, trying 17.9.1..."
+          echo "Failed with version ${FRIDA_VER}, trying fallback 17.9.1..."
           curl -L -o frida-server.xz "${BASE_URL}/17.9.1/frida-server-17.9.1-android-arm64.xz"
         }
 
